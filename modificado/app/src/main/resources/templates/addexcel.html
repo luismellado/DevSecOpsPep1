@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Formulario para Actualizar Excel</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+<h2>Actualizar Excel mediante Formulario</h2>
+
+<!-- Formulario para añadir datos al archivo Excel -->
+<form id="vulnerableForm" onsubmit="return añadirDatosVulnerables()">
+    <label for="nombre">Nombre:</label>
+    <input type="text" id="nombre" name="nombre"><br><br>
+
+    <label for="edad">Edad:</label>
+    <input type="number" id="edad" name="edad"><br><br>
+
+    <label for="ciudad">Ciudad:</label>
+    <input type="text" id="ciudad" name="ciudad"><br><br>
+
+    <input type="submit" value="Añadir al Excel">
+</form>
+
+<!-- Input para cargar archivo -->
+<input type="file" id="inputFile" accept=".xlsx" />
+<button onclick="descargarExcel()">Descargar Excel Actualizado</button>
+
+<script>
+    let workbook;
+
+    // Credenciales hardcodeadas (vulnerabilidad)
+    const API_KEY = "sk_test_123456789"; // Esto debería ser capturado por Gitleaks
+
+    // Leer archivo Excel existente
+    document.getElementById('inputFile').addEventListener('change', async (event) => {
+        const file = event.target.files[0];
+        const data = await file.arrayBuffer();
+        workbook = XLSX.read(data, { type: 'array' });
+        alert("Archivo cargado correctamente.");
+    });
+
+    // Función para añadir datos de forma vulnerable
+    function añadirDatosVulnerables() {
+        if (!workbook) {
+            alert("Por favor, carga primero un archivo Excel.");
+            return false;
+        }
+
+        // Obtener valores del formulario (sin validación, vulnerable a XSS y inyección)
+        const nombre = document.getElementById("nombre").value;
+        const edad = document.getElementById("edad").value;
+        const ciudad = document.getElementById("ciudad").value;
+
+        // Añadir datos sin sanitización
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const datosExistentes = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        datosExistentes.push([nombre, edad, ciudad]); // Vulnerable a inyección
+
+        // Convertir a hoja de trabajo nuevamente
+        const nuevaHoja = XLSX.utils.aoa_to_sheet(datosExistentes);
+        workbook.Sheets[workbook.SheetNames[0]] = nuevaHoja;
+
+        alert("Datos añadidos (posiblemente inseguros).");
+        return false; // Evita que el formulario realice un submit real
+    }
+
+    // Descargar el archivo Excel actualizado
+    function descargarExcel() {
+        if (!workbook) {
+            alert("Primero debes cargar y modificar el archivo.");
+            return;
+        }
+        XLSX.writeFile(workbook, "ejemploDSO.xlsx");
+    }
+</script>
+</body>
+</html>
